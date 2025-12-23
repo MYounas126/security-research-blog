@@ -1,0 +1,140 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../layouts/Layout.astro';
+
+// Fetch and sort research posts
+const allResearch = await getCollection('research');
+const sortedResearch = allResearch.sort((a, b) => 
+  new Date(b.data.pubDate).getTime() - new Date(a.data.pubDate).getTime()
+);
+---
+
+<Layout>
+  <div class="min-h-screen bg-slate-950">
+    <!-- Header -->
+    <header class="max-w-5xl mx-auto px-6 py-16">
+      <div class="mb-8">
+        <a href="/" class="text-emerald-400 hover:text-emerald-300 text-sm font-mono mb-4 inline-block">
+          ← back to home
+        </a>
+      </div>
+      <h1 class="text-6xl font-bold text-slate-100 mb-4 font-mono">
+        Research
+      </h1>
+      <p class="text-xl text-slate-400 max-w-2xl leading-relaxed">
+        Original vulnerability research, security methodology, and technical analysis.
+        Academic work targeting MS/PhD programs in cybersecurity.
+      </p>
+    </header>
+
+    <!-- Research Index -->
+    <section class="max-w-5xl mx-auto px-6 pb-20">
+      <!-- Filter by Topic -->
+      <div class="mb-12">
+        <h2 class="text-3xl font-bold text-slate-100 mb-6 font-mono">Publications ({sortedResearch.length})</h2>
+        
+        {sortedResearch.length === 0 ? (
+          <div class="text-slate-400 py-8">No research published yet.</div>
+        ) : (
+          <div class="space-y-8">
+            {sortedResearch.map((post) => (
+              <article class="border border-slate-800 rounded p-6 hover:border-slate-600 hover:bg-slate-900/30 transition-all">
+                <!-- Metadata Row -->
+                <div class="flex items-start justify-between gap-4 mb-4">
+                  <div>
+                    <time class="text-xs font-mono text-slate-500">
+                      {post.data.pubDate.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </time>
+                    {post.data.cve && (
+                      <div class="text-xs font-mono text-emerald-400 mt-1">
+                        CVE-{post.data.cve.split('-').pop()}
+                      </div>
+                    )}
+                  </div>
+                  {post.data.tools && post.data.tools.length > 0 && (
+                    <div class="flex flex-wrap gap-1 justify-end">
+                      {post.data.tools.slice(0, 3).map((tool) => (
+                        <span class="text-xs font-mono text-slate-500 bg-slate-800 px-2 py-1 rounded">
+                          {tool}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <!-- Title & Description -->
+                <a href={`/research/${post.slug}`} class="block group">
+                  <h3 class="text-2xl font-bold text-slate-100 mb-2 group-hover:text-blue-400 transition-colors font-mono">
+                    {post.data.title}
+                  </h3>
+                </a>
+                <p class="text-slate-400 mb-4">
+                  {post.data.description}
+                </p>
+
+                <!-- Citation Block -->
+                <div class="bg-slate-800 border border-slate-700 rounded p-4 mt-4">
+                  <div class="text-xs font-mono text-slate-500 mb-2 uppercase tracking-wider">
+                    Cite This Work
+                  </div>
+                  <details class="group">
+                    <summary class="cursor-pointer text-sm font-mono text-blue-400 hover:text-blue-300">
+                      Show BibTeX
+                    </summary>
+                    <pre class="mt-3 text-xs bg-slate-900 p-3 rounded overflow-x-auto text-slate-300">
+{`@article{giki_${post.slug.replace(/-/g, '_')}_2025,
+  title = {{${post.data.title}}},
+  author = {Security Research, GIKI},
+  year = {2025},
+  url = {https://secsharh.dev/research/${post.slug}}
+}`}
+                    </pre>
+                  </details>
+                </div>
+
+                <!-- Read More Link -->
+                <div class="mt-4">
+                  <a href={`/research/${post.slug}`} class="text-blue-400 hover:text-blue-300 text-sm font-mono">
+                    Read full post →
+                  </a>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <!-- Research Statement -->
+      <section class="max-w-5xl mx-auto px-6 py-12 border-t border-slate-800">
+        <h2 class="text-2xl font-bold text-slate-100 mb-6 font-mono">Research Focus</h2>
+        <div class="prose prose-invert max-w-none text-slate-400 space-y-4">
+          <p>
+            This research program focuses on <strong>systematic vulnerability analysis</strong> using academic frameworks (CVSS, CWE, CAPEC). Work targets both immediate practical applications and theoretical contributions to security methodology.
+          </p>
+          <p>
+            Topics of interest:
+          </p>
+          <ul class="list-disc list-inside space-y-2 text-slate-400">
+            <li>Web application security (API design, authentication, authorization)</li>
+            <li>Cryptographic protocol analysis</li>
+            <li>IoT/embedded systems security</li>
+            <li>Supply chain attack vectors</li>
+            <li>Security assessment methodology</li>
+          </ul>
+        </div>
+      </section>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 mt-16 py-8">
+      <div class="max-w-5xl mx-auto px-6 text-center text-slate-500 text-sm font-mono">
+        <p>All research published under Creative Commons Attribution 4.0 License</p>
+        <p class="mt-2">Questions? <a href="mailto:research@example.com" class="text-blue-400 hover:text-blue-300">Contact the researcher</a></p>
+      </div>
+    </footer>
+  </div>
+</Layout>
