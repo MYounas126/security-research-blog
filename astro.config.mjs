@@ -1,15 +1,8 @@
 import { defineConfig } from 'astro/config';
-import tailwind from '@astrojs/tailwind';
-import mdx from '@astrojs/mdx';
-
+import tailwindcss from '@tailwindcss/vite';
+// https://astro.build/config
 export default defineConfig({
-  site: 'https://secsharh.dev',
-  integrations: [tailwind(), mdx()],
-  markdown: {
-    shikiConfig: {
-      theme: 'github-dark',
-      wrap: true,
-      langs: ['bash', 'python', 'http', 'json', 'javascript', 'typescript', 'c', 'sql', 'html', 'xml', 'graphql'],
-    },
-  },
+  vite: {
+    plugins: [tailwindcss()]
+  }
 });
